@@ -10,19 +10,11 @@ from datetime import datetime
 # CONFIGURACIÓN
 # =====================================================
 
-# CORREO QUE ENVÍA
-EMAIL_ORIGEN = "Juanleones1018@gmail.com"
+import os
 
-# CLAVE DE APLICACIÓN GMAIL (NO contraseña normal)
-CLAVE_APP = "qixi xrfa rdhq clwi"
-
-# CORREO QUE RECIBE
-EMAIL_DESTINO = [
-    "Juanleones1018@gmail.com",
-    "chaverra01@gmail.com",
-    "geraldine.ramirez1@udea.edu.co","german.valencia@udea.edu.co", "maria.gvasquez@udea.edu.co"
-
-]
+EMAIL_ORIGEN = os.getenv("EMAIL_ORIGEN")
+CLAVE_APP = os.getenv("CLAVE_APP")
+EMAIL_DESTINO = [x.strip() for x in os.getenv("EMAIL_DESTINO").split(",")]
 
 # ARCHIVO EXCEL
 archivo_excel = r"C:\BotPazTotal\historial_paz_total.xlsx"
