@@ -10,16 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Instalar Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
       - name: Ejecutar bot
         run: python bot_paz_total.py
+        env:
+          EMAIL_ORIGEN: ${{ secrets.EMAIL_ORIGEN }}
+          CLAVE_APP: ${{ secrets.CLAVE_APP }}
+          EMAIL_DESTINO: ${{ secrets.EMAIL_DESTINO }}
