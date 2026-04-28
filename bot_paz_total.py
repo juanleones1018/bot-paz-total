@@ -20,7 +20,7 @@ EMAIL_DESTINO = [x.strip() for x in os.getenv("EMAIL_DESTINO").split(",")]
 archivo_excel = r"C:\BotPazTotal\historial_paz_total.xlsx"
 
 # ARCHIVO CONTROL LINKS YA ENVIADOS
-archivo_links = r"C:\BotPazTotal\links_vistos.txt"
+archivo_links = "links_vistos.txt"
 
 # =====================================================
 # FUENTES PRO
