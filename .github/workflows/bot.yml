@@ -34,6 +34,6 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git add links_vistos.txt historial_paz_total.xlsx
+          git add . || echo "Nada que agregar"
           git commit -m "Actualizar historial automático" || echo "Sin cambios"
           git push
