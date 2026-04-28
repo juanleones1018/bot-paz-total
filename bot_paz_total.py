@@ -33,11 +33,11 @@ if not os.path.exists(archivo_excel):
 fuentes = {
     "Noticias": "https://news.google.com/rss/search?q=%22Paz+Total%22+Colombia&hl=es-419&gl=CO&ceid=CO:es-419",
 
-    "Académicos RSS": "https://news.google.com/rss/search?q=%22Paz+Total%22+site:scielo.org.co+OR+site:redalyc.org+OR+site:doi.org&hl=es-419&gl=CO&ceid=CO:es-419",
+    "Académico": "https://news.google.com/rss/search?q=%22Paz+Total%22+site:scielo.org.co+OR+site:redalyc.org+OR+site:doi.org+OR+site:dialnet.unirioja.es&hl=es-419&gl=CO&ceid=CO:es-419",
 
-    "PDFs": "https://news.google.com/rss/search?q=%22Paz+Total%22+filetype:pdf&hl=es-419&gl=CO&ceid=CO:es-419",
+    "YouTube": "https://www.youtube.com/feeds/videos.xml?search_query=Paz+Total+Colombia",
+   "Podcast": "https://news.google.com/rss/search?q=%22Paz+Total%22+(podcast+OR+Spotify+OR+Apple+Podcast+OR+audio)&hl=es-419&gl=CO&ceid=CO:es-419"
 
-    "YouTube": "https://www.youtube.com/feeds/videos.xml?search_query=Paz+Total+Colombia"
 }
 
 # =====================================================
@@ -87,7 +87,7 @@ try:
         if link not in links_vistos:
             nuevos.append({
                 "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Tipo": "Académico PRO",
+                "Tipo": "Académico",
                 "Titulo": titulo,
                 "Link": link
             })
