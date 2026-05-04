@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 # =====================================================
-# CONFIGURACIÓN
+# CONFIG
 # =====================================================
 
 EMAIL_ORIGEN = os.getenv("EMAIL_ORIGEN")
@@ -19,11 +19,92 @@ archivo_excel = "historial_paz_total.xlsx"
 archivo_links = "links_vistos.txt"
 
 # =====================================================
-# CREAR EXCEL SI NO EXISTE
+# FILTROS
+# =====================================================
+
+def es_relevante(titulo):
+    t = titulo.lower()
+    return (
+        "paz total" in t
+        and any(p in t for p in ["colombia", "petro", "eln", "disidencias"])
+    )
+
+# =====================================================
+# CLASIFICACIONES
+# =====================================================
+
+def clasificar(titulo):
+    t = titulo.lower()
+
+    if "eln" in t:
+        return "ELN"
+    elif "disidencias" in t or "emc" in t:
+        return "Disidencias"
+    elif "petro" in t or "gobierno" in t:
+        return "Gobierno"
+    elif "cese al fuego" in t:
+        return "Cese al fuego"
+    elif "negociación" in t:
+        return "Negociación"
+    else:
+        return "General"
+
+def detectar_actor(titulo):
+    t = titulo.lower()
+
+    if "eln" in t:
+        return "ELN"
+    elif "marquetalia" in t:
+        return "Segunda Marquetalia"
+    elif "emc" in t or "disidencias" in t:
+        return "EMC / Disidencias"
+    elif "agc" in t or "clan del golfo" in t:
+        return "AGC"
+    elif "urbana" in t or "barrial" in t:
+        return "Estructuras urbanas"
+    else:
+        return "No identificado"
+
+def tipo_proceso(titulo):
+    t = titulo.lower()
+
+    if "mesa" in t or "diálogo" in t:
+        return "Multilateral"
+    elif "cese unilateral" in t:
+        return "Unilateral"
+    else:
+        return "No claro"
+
+def detectar_variable(titulo):
+    t = titulo.lower()
+
+    if "cese al fuego" in t:
+        return "Cese al fuego"
+    elif "agenda" in t:
+        return "Agenda"
+    elif "delegación" in t:
+        return "Delegaciones"
+    elif "garante" in t:
+        return "Garantes"
+    elif "participación" in t:
+        return "Participación social"
+    elif "acuerdo" in t:
+        return "Acuerdos"
+    else:
+        return "General"
+
+def resumir(titulo):
+    palabras = titulo.split()
+    return " ".join(palabras[:12]) + "..."
+
+# =====================================================
+# CREAR EXCEL
 # =====================================================
 
 if not os.path.exists(archivo_excel):
-    df_base = pd.DataFrame(columns=["Fecha","Tipo","Titulo","Link"])
+    df_base = pd.DataFrame(columns=[
+        "Fecha","Tipo","Actor","Proceso","Variable","Categoria","Titulo","Resumen","Link"
+    ])
     df_base.to_excel(archivo_excel, index=False)
 
 # =====================================================
@@ -31,17 +112,17 @@ if not os.path.exists(archivo_excel):
 # =====================================================
 
 fuentes = {
-    "Noticias": "https://news.google.com/rss/search?q=%22Paz+Total%22+Colombia&hl=es-419&gl=CO&ceid=CO:es-419",
+    "Noticias": "https://news.google.com/rss/search?q=%22Paz+Total%22+Colombia+after:2023&hl=es-419&gl=CO&ceid=CO:es-419",
 
-    "Académico": "https://news.google.com/rss/search?q=%22Paz+Total%22+site:scielo.org.co+OR+site:redalyc.org+OR+site:doi.org+OR+site:dialnet.unirioja.es&hl=es-419&gl=CO&ceid=CO:es-419",
+    "Académico": "https://news.google.com/rss/search?q=%22Paz+Total%22+Colombia+(site:scielo.org.co+OR+site:redalyc.org+OR+site:doi.org+OR+site:dialnet.unirioja.es)+after:2023&hl=es-419&gl=CO&ceid=CO:es-419",
 
-    "YouTube": "https://www.youtube.com/feeds/videos.xml?search_query=Paz+Total+Colombia",
-   "Podcast": "https://news.google.com/rss/search?q=%22Paz+Total%22+(podcast+OR+Spotify+OR+Apple+Podcast+OR+audio)&hl=es-419&gl=CO&ceid=CO:es-419"
+    "Podcast": "https://news.google.com/rss/search?q=%22Paz+Total%22+(podcast+OR+Spotify+OR+audio)&hl=es-419&gl=CO&ceid=CO:es-419",
 
+    "YouTube": "https://www.youtube.com/feeds/videos.xml?search_query=Paz+Total+Colombia"
 }
 
 # =====================================================
-# CARGAR LINKS
+# LINKS
 # =====================================================
 
 if os.path.exists(archivo_links):
@@ -53,7 +134,7 @@ else:
 nuevos = []
 
 # =====================================================
-# RSS NORMAL
+# RSS
 # =====================================================
 
 for tipo, url in fuentes.items():
@@ -63,41 +144,85 @@ for tipo, url in fuentes.items():
         titulo = item.title.strip()
         link = item.link.strip()
 
-        if link not in links_vistos:
+        if link not in links_vistos and es_relevante(titulo):
             nuevos.append({
                 "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Tipo": tipo,
+                "Actor": detectar_actor(titulo),
+                "Proceso": tipo_proceso(titulo),
+                "Variable": detectar_variable(titulo),
+                "Categoria": clasificar(titulo),
                 "Titulo": titulo,
+                "Resumen": resumir(titulo),
                 "Link": link
             })
             links_vistos.add(link)
 
 # =====================================================
-# NUEVA FUENTE PRO: OPENALEX (PAPERS REALES)
+# OPENALEX
 # =====================================================
 
 try:
-    url = "https://api.openalex.org/works?search=Paz%20Total%20Colombia&per-page=5"
+    url = "https://api.openalex.org/works?search=%22Paz%20Total%22%20Colombia&filter=from_publication_date:2023-01-01&sort=publication_date:desc&per-page=10"
     r = requests.get(url).json()
 
     for item in r["results"]:
         titulo = item["title"]
         link = item["id"]
 
-        if link not in links_vistos:
+        if link not in links_vistos and es_relevante(titulo):
             nuevos.append({
                 "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Tipo": "Académico",
+                "Actor": detectar_actor(titulo),
+                "Proceso": tipo_proceso(titulo),
+                "Variable": detectar_variable(titulo),
+                "Categoria": clasificar(titulo),
                 "Titulo": titulo,
+                "Resumen": resumir(titulo),
                 "Link": link
             })
             links_vistos.add(link)
 
 except:
-    print("OpenAlex falló, continuando...")
+    print("OpenAlex falló")
 
 # =====================================================
-# GUARDAR EXCEL
+# PARES + INDEPAZ
+# =====================================================
+
+try:
+    especiales = [
+        "https://www.pares.com.co/feed",
+        "https://indepaz.org.co/feed"
+    ]
+
+    for url in especiales:
+        feed = feedparser.parse(url)
+
+        for item in feed.entries[:5]:
+            titulo = item.title.strip()
+            link = item.link.strip()
+
+            if link not in links_vistos and es_relevante(titulo):
+                nuevos.append({
+                    "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "Tipo": "Centro de investigación",
+                    "Actor": detectar_actor(titulo),
+                    "Proceso": tipo_proceso(titulo),
+                    "Variable": detectar_variable(titulo),
+                    "Categoria": clasificar(titulo),
+                    "Titulo": titulo,
+                    "Resumen": resumir(titulo),
+                    "Link": link
+                })
+                links_vistos.add(link)
+
+except:
+    print("Centros fallaron")
+
+# =====================================================
+# EXCEL
 # =====================================================
 
 df_nuevo = pd.DataFrame(nuevos)
@@ -118,43 +243,38 @@ with open(archivo_links, "w", encoding="utf-8") as f:
 # CORREO
 # =====================================================
 
-html = f"""
-<h2>📌 Reporte Diario - Paz Total Colombia</h2>
-<p>Fecha: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
-"""
+html = f"<h2>📌 Reporte Diario - Paz Total Colombia</h2>
+<p>{datetime.now()}</p>"
 
 if nuevos:
 
-    html += f"<p><b>{len(nuevos)} novedades detectadas</b></p>"
-
-    html += "<table border='1'><tr><th>Tipo</th><th>Título</th><th>Link</th></tr>"
+    html += "<table border='1'>"
+    html += "<tr><th>Actor</th><th>Proceso</th><th>Variable</th><th>Título</th></tr>"
 
     for item in nuevos:
-        html += f"<tr><td>{item['Tipo']}</td><td>{item['Titulo']}</td><td><a href='{item['Link']}'>Abrir</a></td></tr>"
+        html += f"""
+        <tr>
+            <td>{item['Actor']}</td>
+            <td>{item['Proceso']}</td>
+            <td>{item['Variable']}</td>
+            <td><a href="{item['Link']}">{item['Titulo']}</a></td>
+        </tr>
+        """
 
     html += "</table>"
 
 else:
-    html += "<p>📭 Sin novedades hoy, bot funcionando correctamente.</p>"
+    html += "<p>Sin novedades hoy</p>"
 
 msg = MIMEMultipart()
-
-fecha = datetime.now().strftime("%d/%m")
-
-if nuevos:
-    msg["Subject"] = f"📌 Paz Total {fecha} | {len(nuevos)} novedades"
-else:
-    msg["Subject"] = f"📌 Paz Total {fecha} | Sin novedades"
-
+msg["Subject"] = f"📌 Paz Total | {len(nuevos)} hallazgos"
 msg["From"] = EMAIL_ORIGEN
 msg["To"] = ", ".join(EMAIL_DESTINO)
 
-msg.attach(MIMEText(html, "html", "utf-8"))
+msg.attach(MIMEText(html, "html"))
 
 server = smtplib.SMTP("smtp.gmail.com", 587)
 server.starttls()
 server.login(EMAIL_ORIGEN, CLAVE_APP)
 server.sendmail(EMAIL_ORIGEN, EMAIL_DESTINO, msg.as_string())
 server.quit()
-
-print("Correo enviado correctamente")
