@@ -243,8 +243,10 @@ with open(archivo_links, "w", encoding="utf-8") as f:
 # CORREO
 # =====================================================
 
-html = f"<h2>📌 Reporte Diario - Paz Total Colombia</h2>
-<p>{datetime.now()}</p>"
+html = f"""
+<h2>📌 Reporte Diario - Paz Total Colombia</h2>
+<p>{datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
+"""
 
 if nuevos:
 
